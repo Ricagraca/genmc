@@ -28,6 +28,7 @@ DriverFactory::create(std::unique_ptr<Config> conf, std::unique_ptr<llvm::Module
 {
 	switch (conf->model) {
 	case ModelType::rc11:
+	  WARN("RUN C11!\n");
 		return std::unique_ptr<RC11Driver>(
 			new RC11Driver(std::move(conf), std::move(mod), start));
 	case ModelType::imm:

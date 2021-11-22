@@ -28,11 +28,15 @@
 RC11Driver::RC11Driver(std::unique_ptr<Config> conf, std::unique_ptr<llvm::Module> mod, clock_t start)
 	: GenMCDriver(std::move(conf), std::move(mod), start)
 {
+	WARN("ENTERING CONSTRUCTOR! \n");
 	auto &g = getGraph();
 
+	WARN("GOT THE GRAPH \n");
 	/* RC11 requires the calculation of PSC */
 	g.addCalculator(LLVM_MAKE_UNIQUE<PSCCalculator>(g),
 			ExecutionGraph::RelationId::psc, false);
+	
+	WARN("ADDING CALCULATOR NOW\n");
 	return;
 }
 

@@ -56,143 +56,162 @@ using namespace clang::driver;
 
 std::string getExecutablePath(const char *Argv0)
 {
-	/*
-	 * This just needs to be some symbol in the binary; C++ doesn't
-	 * allow taking the address of ::main however.
-	 */
-	void *MainAddr = (void*) (intptr_t) getExecutablePath;
-	return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
+  /*
+   * This just needs to be some symbol in the binary; C++ doesn't
+   * allow taking the address of ::main however.
+   */
+  void *MainAddr = (void*) (intptr_t) getExecutablePath;
+  return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
 }
 
 llvm::opt::ArgStringList filterCC1Args(const llvm::opt::ArgStringList &ccArgs)
 {
-	std::set<std::string> ignoredArgs = {"-discard-value-names"};
-	llvm::opt::ArgStringList newCcArgs;
+  std::set<std::string> ignoredArgs = {"-discard-value-names"};
+  llvm::opt::ArgStringList newCcArgs;
 
-	for (auto &arg : ccArgs) {
-		if (ignoredArgs.count(arg) == 0) {
-			newCcArgs.push_back(arg);
-		}
-	}
-	return newCcArgs;
+  for (auto &arg : ccArgs) {
+    if (ignoredArgs.count(arg) == 0) {
+      newCcArgs.push_back(arg);
+    }
+  }
+  return newCcArgs;
 }
 
 int main(int argc, char **argv)
 {
-	clock_t start = clock();
-	std::unique_ptr<Config> conf(new Config());
-	Parser parser;
+  // clock_t start = clock();
+  // std::unique_ptr<Config> conf(new Config());
+  // 	Parser parser;
 
-	conf->getConfigOptions(argc, argv);
-	if (conf->inputFromBitcodeFile) {
-		auto sourceCode = parser.readFile(conf->inputFile);
-		auto mod = LLVMModule::getLLVMModule(conf->inputFile, sourceCode);
-		std::unique_ptr<GenMCDriver> driver =
-			DriverFactory::create(std::move(conf), std::move(mod), start);
-		driver->run();
-		/* TODO: Check globalContext.destroy() and llvm::shutdown() */
-		return 0;
-	}
+  // 	conf->getConfigOptions(argc, argv);
+  // 	if (conf->inputFromBitcodeFile) {
+  // 		auto sourceCode = parser.readFile(conf->inputFile);
+  // 		auto mod = LLVMModule::getLLVMModule(conf->inputFile, sourceCode);
+  // 		std::unique_ptr<GenMCDriver> driver =
+  // 			DriverFactory::create(std::move(conf), std::move(mod), start);
+  // 		driver->run();
+  // 		/* TODO: Check globalContext.destroy() and llvm::shutdown() */
+  // 		return 0;
+  // 	}
 
-	void *MainAddr = (void*) (intptr_t) getExecutablePath;
-	std::string Path = CLANGPATH;
-	IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
-	TextDiagnosticPrinter *DiagClient =
-		new TextDiagnosticPrinter(llvm::errs(), &*DiagOpts);
+  // 	void *MainAddr = (void*) (intptr_t) getExecutablePath;
+  // 	std::string Path = CLANGPATH;
+  // 	IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
+  // 	TextDiagnosticPrinter *DiagClient =
+  // 		new TextDiagnosticPrinter(llvm::errs(), &*DiagOpts);
 
-	IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
-	DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagClient);
+  // 	IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
+  // 	DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagClient);
 
-	// Use ELF on windows for now.
-	std::string TripleStr = llvm::sys::getProcessTriple();
-	llvm::Triple T(TripleStr);
-	if (T.isOSBinFormatCOFF())
-		T.setObjectFormat(llvm::Triple::ELF);
+  // 	// Use ELF on windows for now.
+  // 	std::string TripleStr = llvm::sys::getProcessTriple();
+  // 	llvm::Triple T(TripleStr);
+  // 	if (T.isOSBinFormatCOFF())
+  // 		T.setObjectFormat(llvm::Triple::ELF);
 
-	Driver TheDriver(Path, T.str(), Diags);
-	TheDriver.setTitle("clang interpreter");
-	TheDriver.setCheckInputsExist(false);
+  // 	Driver TheDriver(Path, T.str(), Diags);
+  // 	TheDriver.setTitle("clang interpreter");
+  // 	TheDriver.setCheckInputsExist(false);
 
-	SmallVector<const char *, 16> Args;//(argv, argv + argc);
-	Args.push_back("-fsyntax-only");
-#ifdef HAVE_CLANG_DISABLE_OPTNONE
-	Args.push_back("-Xclang");
-	Args.push_back("-disable-O0-optnone");
-#endif
-	Args.push_back("-g"); /* Compile with -g to get debugging mdata */
-	for (auto &f : conf->cflags)
-		Args.push_back(f.c_str());
-	Args.push_back("-I" SRC_INCLUDE_DIR);
-	Args.push_back("-I" INCLUDE_DIR);
-	auto inodeFlag = "-D__CONFIG_GENMC_INODE_DATA_SIZE=" + std::to_string(conf->maxFileSize);
-	Args.push_back(inodeFlag.c_str());
-	Args.push_back(conf->inputFile.c_str());
+  // 	SmallVector<const char *, 16> Args;//(argv, argv + argc);
+  // 	Args.push_back("-fsyntax-only");
+  // #ifdef HAVE_CLANG_DISABLE_OPTNONE
+  // 	Args.push_back("-Xclang");
+  // 	Args.push_back("-disable-O0-optnone");
+  // #endif
+  // 	Args.push_back("-g"); /* Compile with -g to get debugging mdata */
+  // 	for (auto &f : conf->cflags)
+  // 		Args.push_back(f.c_str());
+  // 	Args.push_back("-I" SRC_INCLUDE_DIR);
+  // 	Args.push_back("-I" INCLUDE_DIR);
+  // 	auto inodeFlag = "-D__CONFIG_GENMC_INODE_DATA_SIZE=" + std::to_string(conf->maxFileSize);
+  // 	Args.push_back(inodeFlag.c_str());
+  // 	Args.push_back(conf->inputFile.c_str());
 
-	std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(Args));
-	if (!C)
-		return ECOMPILE;
+  // 	std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(Args));
+  // 	if (!C)
+  // 		return ECOMPILE;
 
-	const driver::JobList &Jobs = C->getJobs();
-#ifdef CLANG_LIST_TYPE_JOB_PTR
-	const driver::Command &Cmd = *cast<driver::Command>(*Jobs.begin());
-#else
-	const driver::Command &Cmd = (*Jobs.begin());
-#endif
-	const llvm::opt::ArgStringList &CCArgs = Cmd.getArguments();
-	const llvm::opt::ArgStringList FCCArgs = filterCC1Args(CCArgs);
-#ifdef CLANG_COMPILER_INVOCATION_PTR
-	CompilerInvocation *CI
-#else
-	std::shared_ptr<CompilerInvocation> CI
-#endif
-		(new CompilerInvocation);
+  // 	const driver::JobList &Jobs = C->getJobs();
+  // #ifdef CLANG_LIST_TYPE_JOB_PTR
+  // 	const driver::Command &Cmd = *cast<driver::Command>(*Jobs.begin());
+  // #else
+  // 	const driver::Command &Cmd = (*Jobs.begin());
+  // #endif
+  // 	const llvm::opt::ArgStringList &CCArgs = Cmd.getArguments();
+  // 	const llvm::opt::ArgStringList FCCArgs = filterCC1Args(CCArgs);
+  // #ifdef CLANG_COMPILER_INVOCATION_PTR
+  // 	CompilerInvocation *CI
+  // #else
+  // 	std::shared_ptr<CompilerInvocation> CI
+  // #endif
+  // 		(new CompilerInvocation);
 
-#ifdef CLANG_CREATE_FROM_ARGS_ARRAY_REF
-	CompilerInvocation::CreateFromArgs(*CI, FCCArgs, Diags);
-#else
-	CompilerInvocation::CreateFromArgs(*CI,
-					   const_cast<const char **>(FCCArgs.data()),
-					   const_cast<const char **>(FCCArgs.data()) +
-					   FCCArgs.size(), Diags);
-#endif
+  // #ifdef CLANG_CREATE_FROM_ARGS_ARRAY_REF
+  // 	CompilerInvocation::CreateFromArgs(*CI, FCCArgs, Diags);
+  // #else
+  // 	CompilerInvocation::CreateFromArgs(*CI,
+  // 					   const_cast<const char **>(FCCArgs.data()),
+  // 					   const_cast<const char **>(FCCArgs.data()) +
+  // 					   FCCArgs.size(), Diags);
+  // #endif
 
-	// Show the invocation, with -v.
-	if (CI->getHeaderSearchOpts().Verbose) {
-		llvm::errs() << "clang invocation:\n";
-		Jobs.Print(llvm::errs(), "\n", true);
-		llvm::errs() << "\n";
-	}
+  // 	// Show the invocation, with -v.
+  // 	if (CI->getHeaderSearchOpts().Verbose) {
+  // 		llvm::errs() << "clang invocation:\n";
+  // 		Jobs.Print(llvm::errs(), "\n", true);
+  // 		llvm::errs() << "\n";
+  // 	}
 
-	CompilerInstance Clang;
-	Clang.setInvocation(CI);
+  // 	CompilerInstance Clang;
+  // 	Clang.setInvocation(CI);
 
-	// Create the compilers actual diagnostics engine.
-	Clang.createDiagnostics();
-	if (!Clang.hasDiagnostics())
-		return ECOMPILE;
+  // 	// Create the compilers actual diagnostics engine.
+  // 	Clang.createDiagnostics();
+  // 	if (!Clang.hasDiagnostics())
+  // 		return ECOMPILE;
 
-	// Infer the builtin include path if unspecified.
-	if (Clang.getHeaderSearchOpts().UseBuiltinIncludes &&
-	    Clang.getHeaderSearchOpts().ResourceDir.empty())
-		Clang.getHeaderSearchOpts().ResourceDir =
-			CompilerInvocation::GetResourcesPath(argv[0], MainAddr);
+  // 	// Infer the builtin include path if unspecified.
+  // 	if (Clang.getHeaderSearchOpts().UseBuiltinIncludes &&
+  // 	    Clang.getHeaderSearchOpts().ResourceDir.empty())
+  // 		Clang.getHeaderSearchOpts().ResourceDir =
+  // 			CompilerInvocation::GetResourcesPath(argv[0], MainAddr);
 
-	// Create and execute the frontend to generate an LLVM bitcode module.
-	std::unique_ptr<CodeGenAction> Act(new EmitLLVMOnlyAction());
-	if (!Clang.ExecuteAction(*Act))
-		return ECOMPILE;
+  clock_t start = clock();
+  std::unique_ptr<Config> conf(new Config());
+
+  // Memory model
+  conf->model = ModelType::rc11;
+
+  
+  // Come back here Persisency
+  conf->persevere = true;
+  conf->checkPersPoint = ProgramPoint::step; 
+  conf->blockSize = 524288;
+  conf->maxFileSize = conf->blockSize * 100;
+  conf->journalData = JournalDataFS::writeback;
+  conf->disableDelalloc = false;
+
+  // 	// Create and execute the frontend to generate an LLVM bitcode module.
+  std::unique_ptr<CodeGenAction> Act(new EmitLLVMOnlyAction());
+  // if (!Clang.ExecuteAction(*Act))
+  // 	return ECOMPILE;
 
 #ifdef LLVM_EXECUTIONENGINE_MODULE_UNIQUE_PTR
-	std::unique_ptr<GenMCDriver> driver =
-		DriverFactory::create(std::move(conf), Act->takeModule(), start);
+  WARN("LLVM_EXECUTIONENGINE_MODULE_UNIQUE_PTR ON\n");
+  std::unique_ptr<GenMCDriver> driver =
+    DriverFactory::create(std::move(conf), Act->takeModule(), start);
 #else
-	std::unique_ptr<GenMCDriver> driver =
-		DriverFactory::create(std::move(conf), std::unique_ptr<llvm::Module>(Act->takeModule()),
-				      start);
+  WARN("LLVM_EXECUTIONENGINE_MODULE_UNIQUE_PTR OFF\n");
+  std::unique_ptr<GenMCDriver> driver =
+    DriverFactory::create(std::move(conf), // std::unique_ptr<llvm::Module>(Act->takeModule() 
+			  nullptr,
+			  start);
 #endif
 
-	driver->run();
-	/* TODO: Check globalContext.destroy() and llvm::shutdown() */
+  WARN("RUNNING DRIVER!\n");
+  driver->run();
+  /* TODO: Check globalContext.destroy() and llvm::shutdown() */
 
-	return 0;
+  return 0;
 }

@@ -4478,6 +4478,8 @@ void Interpreter::run()
 
 	driver->handleExecutionBeginning();
 	while (driver->scheduleNext()) {
+		assert(false);
+
 		driver->handleExecutionInProgress();
 		llvm::ExecutionContext &SF = ECStack().back();
 		llvm::Instruction &I = *SF.CurInst++;
